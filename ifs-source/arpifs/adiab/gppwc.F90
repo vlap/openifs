@@ -9,7 +9,7 @@
 ! (C) Copyright 1989- Meteo-France.
 ! 
 
-SUBROUTINE GPPWC(KPROMA,KSTART,KPROF,KFLEV,PWCH,PQ,PRXP)
+SUBROUTINE GPPWC(KPROMA,KSTART,KPROF,KFLEV,PWCH,PQ,PRXP,PWCH_DP)
 
 !**** *GPPWC* - Computes half level PWC.
 
@@ -19,7 +19,7 @@ SUBROUTINE GPPWC(KPROMA,KSTART,KPROF,KFLEV,PWCH,PQ,PRXP)
 
 !**   Interface.
 !     ----------
-!        *CALL* *GPPWC(KPROMA,KSTART,KPROF,KFLEV,PWCH,PQ,PRXP)
+!        *CALL* *GPPWC(KPROMA,KSTART,KPROF,KFLEV,PWCH,PQ,PRXP,PWCH_DP)
 
 !        Explicit arguments :
 !        --------------------
@@ -29,8 +29,8 @@ SUBROUTINE GPPWC(KPROMA,KSTART,KPROF,KFLEV,PWCH,PQ,PRXP)
 !        KFLEV                      - NUMBER OF LEVELS         (INPUT)
 !        PWCH (KPROMA,0:KFLEV)      - HALF LEVEL PWC           (OUTPUT)
 !        PQ  (KPROMA,KFLEV)         - HUMIDITY                 (INPUT)
-!        PRXP(KPROMA,0:KFLEV,NPPM)  - HALF,FULL AND LN HALF LEVEL
-!                                     PRESSURES (SEE PPINIT)   (INPUT)
+!        PRXP(KPROMA,0:KFLEV)       - HALF LEVEL PRESSURES     (INPUT)
+!        PWCH_DP (KPROMA,0:KFLEV)   - OPTIONAL DP HALF LEVEL PWC (OUTPUT)
 
 !        Implicit arguments :    None.
 !        --------------------
@@ -58,7 +58,7 @@ SUBROUTINE GPPWC(KPROMA,KSTART,KPROF,KFLEV,PWCH,PQ,PRXP)
 !        A.Geer        09-Oct-2015 remove dependency on YRDIMF%NPPM to call from OOPS obsop
 !     ------------------------------------------------------------------
 
-USE PARKIND1 , ONLY : JPIM, JPRB
+USE PARKIND1 , ONLY : JPIM, JPRB, JPRD
 USE YOMHOOK  , ONLY : LHOOK, DR_HOOK, JPHOOK
 USE YOMCST   , ONLY : RG
 
@@ -73,12 +73,14 @@ INTEGER(KIND=JPIM),INTENT(IN)    :: KPROF
 REAL(KIND=JPRB)   ,INTENT(OUT)   :: PWCH(KPROMA,0:KFLEV) 
 REAL(KIND=JPRB)   ,INTENT(IN)    :: PQ(KPROMA,KFLEV) 
 REAL(KIND=JPRB)   ,INTENT(IN)    :: PRXP(KPROMA,0:KFLEV) 
+REAL(KIND=JPRD)   ,OPTIONAL,INTENT(OUT) :: PWCH_DP(KPROMA,0:KFLEV)
 
 !     ------------------------------------------------------------------
 
 INTEGER(KIND=JPIM) :: JL, JLEV
 
 REAL(KIND=JPRB) :: ZDELP, ZRGI
+REAL(KIND=JPRD) :: ZRGI_DP
 REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
 !     ------------------------------------------------------------------
@@ -90,13 +92,18 @@ IF (LHOOK) CALL DR_HOOK('GPPWC',0,ZHOOK_HANDLE)
 !              -----------------------
 
 ZRGI=1.0_JPRB/RG
+ZRGI_DP=1.0_JPRD/REAL(RG, KIND=JPRD)
 DO JL=KSTART,KPROF
   PWCH(JL,0)=0.0_JPRB
+  IF (PRESENT(PWCH_DP)) PWCH_DP(JL,0)=0.0_JPRD
 ENDDO
 DO JLEV=1,KFLEV
   DO JL=KSTART,KPROF
     ZDELP=PRXP(JL,JLEV)-PRXP(JL,JLEV-1)
     PWCH(JL,JLEV)=PWCH(JL,JLEV-1)+PQ(JL,JLEV)*ZDELP*ZRGI
+    IF (PRESENT(PWCH_DP)) THEN
+      PWCH_DP(JL,JLEV)=PWCH_DP(JL,JLEV-1)+REAL(PQ(JL,JLEV), KIND=JPRD)*REAL(ZDELP, KIND=JPRD)*ZRGI_DP
+    ENDIF
   ENDDO
 ENDDO
 
