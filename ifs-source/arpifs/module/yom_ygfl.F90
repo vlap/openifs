@@ -287,6 +287,7 @@ INTEGER(KIND=JPIM) :: NOPTNEGFIX   ! 1: simple negative fixer (reset to 0)
 
 LOGICAL :: LQM3DCONS    = .FALSE.  ! Bermejo & Staniforth quasi-monotone limiter with improved
                                    ! conservation option. When true, applied to all GFL s.t. LQM3D=true
+LOGICAL :: LSTOCH_ROUNDING = .TRUE. ! Enable modular stochastic rounding for 3D tracer updates (SP only)
 LOGICAL :: LADVNEGFIX   = .FALSE.  ! Activates negative fixer for advection
 LOGICAL :: LTRCMFBC     = .FALSE.  ! Activate Bermejo & Conde mass fixer if true
 LOGICAL :: LTRCMFPR     = .FALSE.  ! Activate Priestley mass fixer if true
